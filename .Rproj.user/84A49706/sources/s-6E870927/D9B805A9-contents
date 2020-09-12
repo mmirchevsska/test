@@ -1,0 +1,80 @@
+---
+title: 'Prv fancy grafic: Tazna statistika'
+author: "Marija"
+date: "11/09/2020"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    df_print: paged
+    fig_cap: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, cache=FALSE)
+```
+```{r}
+library(tidyverse)
+library(lubridate)
+library(viridis)
+```
+
+```{r}
+df <-  readr::read_csv("https://raw.githubusercontent.com/discindo/natochak/master/mvr-data.csv")
+```
+
+```{r}
+#keep the traffic accidents
+traffacc <- df %>%
+  #separate Date of event; having months as observations might be useful.
+  separate(DateOfEvent, c("Day", "Month", "Year"), sep = "\\.", remove = FALSE) %>%
+  #separate hours:mins, make numeric
+  separate(Hour, c("H", "M"), sep = "\\:", remove = FALSE) %>%
+  mutate(Hours = as.numeric(H)) %>%
+  #filter so we keep just the traffic accidents
+  filter(Event == "сообраќајна незгода") %>% 
+  mutate(Outcome = ordered(Outcome, levels = c("непознато", "повреда", "тешка повреда", "животна опасност", "смрт")))
+```
+
+
+```{r}
+#deal with the municipalities
+traffacc <- traffacc %>% 
+  mutate(Mun2 = ifelse(is.na(Mun), Place, Mun)) %>%
+  mutate(MunLatin = stringi::stri_trans_general(Mun2, 'latin')) %>%
+  mutate(MunLatin = ifelse(MunLatin == "Ǵorče Petrov", "Gjorče Petrov", MunLatin))
+#Skopski_opstini <- c("Aerodrom", "Centar", "Gjorče Petrov", "Kisela Voda", "Karpoš", "Gazi Baba", "Arachinovo", "Ilinden")
+#traffacc$MunLatin2 <- traffacc$MunLatin
+#traffacc$MunLatin2[traffacc$MunLatin2 %in% Skopski_opstini] <- "Skopje"
+#traffacc$MunLatin[traffacc$MunLatin %in% Skopski_opstini] <- "Skopje"
+```
+
+
+```{r}
+# time as time!
+traffacc <- traffacc %>% 
+  mutate(DateTime= parse_date_time(paste(DateOfEvent, Hour, sep=" "), orders="dmy HM")) %>% 
+  mutate(TimeHM=parse_time(x = Hour, format="%H:%M")) %>%
+  mutate(TimeH=hour(x = DateTime)) %>% 
+  mutate(TypeOfRoadMK=case_when(
+    TypeOfRoad == 'Open'  ~ 'Отворен',
+    TypeOfRoad == 'Rural' ~ 'Селски',
+    TypeOfRoad == 'Urban' ~ 'Градски'
+  ))
+```
+
+```{r, fig.width=10}
+ggplot(traffacc, aes(x=AgeV1, y=TimeHM, fill = Outcome, ordered = TRUE)) +
+  geom_point(size = 3, alpha = 0.9, pch=21) +
+  labs(fill="Вид на повреда") +
+  scale_color_viridis(discrete = TRUE, option = "D") +
+  facet_wrap("TypeOfRoadMK", ncol=3) +
+  theme(legend.position="top") +
+  scale_y_time() +
+  #scale_y_time(sec.axis = dup_axis()) +
+  labs(title="Сообраќајни незгоди по години на велосипедист и час во денот",
+          x = "Возраст на велосипедист", y = "Час од денот во кој е случена незгода")
+```
+
+

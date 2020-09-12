@@ -1,0 +1,13 @@
+"0","#keep the traffic accidents"
+"0","traffacc <- df %>%"
+"0","  #separate Date of event; having months as observations might be useful."
+"0","  separate(DateOfEvent, c(""Day"", ""Month"", ""Year""), sep = ""\\."", remove = FALSE) %>%"
+"0","  #separate hours:mins, make numeric"
+"0","  separate(Hour, c(""H"", ""M""), sep = ""\\:"", remove = FALSE) %>%"
+"0","  mutate(Hours = as.numeric(H)) %>%"
+"0","  #filter so we keep just the traffic accidents"
+"0","  filter(Event == ""сообраќајна незгода"") %>% "
+"0","  mutate(Outcome = ordered(Outcome, levels = c(""непознато"", ""повреда"", ""тешка повреда"", ""животна опасност"", ""смрт"")))"
+"2","Error in UseMethod(""separate_"") : 
+  no applicable method for 'separate_' applied to an object of class ""function""
+"
